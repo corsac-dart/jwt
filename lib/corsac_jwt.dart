@@ -133,7 +133,7 @@ class JWT {
   String get issuer => _claims['iss'];
 
   /// The audience of this token (value of standard `aud` claim).
-  String get audience => _claims['aud'];
+  List<String> get audience => _claims['aud'].cast<String>();
 
   /// The time this token was issued (value of standard `iat` claim).
   int get issuedAt => _claims['iat'];
@@ -185,8 +185,12 @@ class JWTBuilder {
   }
 
   /// Token audience (standard `aud` claim).
-  void set audience(String audience) {
-    _claims['aud'] = audience;
+  void set audience(dynamic audience) {
+    if (audience is String) {
+      _claims['aud'] = [audience];
+    } else if (audience is List<String>) {
+      _claims['aud'] = audience;
+    }
   }
 
   /// Token issued at timestamp in seconds (standard `iat` claim).
@@ -333,7 +337,7 @@ class JWTValidator {
       errors.add('The token issuer is invalid.');
     }
 
-    if (audience is String && audience != token.audience) {
+    if (audience is String && !token.audience.contains(audience)) {
       errors.add('The token audience is invalid.');
     }
 
