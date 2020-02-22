@@ -286,7 +286,7 @@ class JWTHmacSha256Signer implements JWTSigner {
       return isEqual;
     } else
       return false;
-  }
+  }v
 }
 
 /// Validator for JSON Web Tokens.
