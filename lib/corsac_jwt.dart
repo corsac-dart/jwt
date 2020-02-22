@@ -30,7 +30,6 @@
 library corsac_jwt;
 
 import 'dart:convert';
-
 import 'package:crypto/crypto.dart';
 
 final _jsonToBase64Url = json.fuse(utf8.fuse(base64Url));
@@ -242,9 +241,9 @@ class JWTBuilder {
   ///
   /// To create unsigned token use [getToken].
   JWT getSignedToken(JWTSigner signer) {
-    var headers = {'typ': 'JWT', 'alg': signer.algorithm};
+    var headers = {'alg': signer.algorithm, 'typ': 'JWT'};
     String encodedHeader = _base64Unpadded(_jsonToBase64Url.encode(headers));
-    String encodedPayload = _base64Unpadded(_jsonToBase64Url.encode(_claims));
+    String encodedPayload = _base64Unpadded(_jsonToBase64Url.encode(_claims['data']));
     var body = encodedHeader + '.' + encodedPayload;
     var signature =
         _base64Unpadded(base64Url.encode(signer.sign(utf8.encode(body))));
@@ -260,6 +259,7 @@ abstract class JWTSigner {
 }
 
 /// Signer implementing HMAC encryption using SHA256 hashing.
+/** INI ERROR */
 class JWTHmacSha256Signer implements JWTSigner {
   final List<int> secret;
 
