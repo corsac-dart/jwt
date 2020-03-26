@@ -4,6 +4,7 @@ packages
 .packages
 doc/api
 bin/
+.dart_tool/
 
 coverage/
 .test_coverage.dart

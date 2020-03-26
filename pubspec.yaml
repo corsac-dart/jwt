@@ -10,8 +10,8 @@ environment:
 dependencies:
   asn1lib: "^0.5.0"
   logging: "^0.11.3"
-#  pointycastle: "1.0.0-rc2"
-#  rsa_pkcs: "^0.1.2"
+  pointycastle: "^1.0.2"
+  rsa_pkcs: "^1.1.0"
   crypto: "^2.0.0"
 
 dev_dependencies:
