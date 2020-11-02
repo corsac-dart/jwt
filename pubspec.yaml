@@ -8,9 +8,9 @@ environment:
   sdk: ">=2.2.0 <3.0.0"
 
 dependencies:
-  asn1lib: "^0.6.4"
+  asn1lib: "^0.8.1"
   logging: "^0.11.3"
-  pointycastle: "^1.0.2"
+  pointycastle: "^2.0.0"
   rsa_pkcs: "^1.1.2"
   crypto: "^2.0.0"
 
