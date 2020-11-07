@@ -10,7 +10,7 @@ script:
   - pub get
   - pub run test -r expanded
   - dartfmt -n --set-exit-if-changed lib/
-  - dartanalyzer --fatal-infos --fatal-warnings .
+  - dart analyze --fatal-infos --fatal-warnings .
   - pub run test_coverage
 
 after_success:
