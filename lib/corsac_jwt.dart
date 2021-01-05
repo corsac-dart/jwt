@@ -1,7 +1,3 @@
-library corsac_jwt;
-
-import 'dart:convert';
-
 /// Lightweight JSON Web Token (JWT) implementation.
 ///
 /// ## Usage
@@ -30,7 +26,9 @@ import 'dart:convert';
 ///       print(errors); // (empty list)
 ///     }
 ///
+library corsac_jwt;
 
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -38,7 +36,9 @@ import 'package:logging/logging.dart';
 import 'package:pointycastle/pointycastle.dart';
 import 'package:rsa_pkcs/rsa_pkcs.dart' as rsa;
 
-Logger _logger = Logger('JWTRsaSha256Signer');
+import 'src/utils.dart';
+
+final _logger = Logger('JWTRsaSha256Signer');
 
 class JWTRsaSha256Signer implements JWTSigner {
   final rsa.RSAPrivateKey _privateKey;
@@ -87,16 +87,17 @@ class JWTRsaSha256Signer implements JWTSigner {
       throw StateError(
           'RS256 signer requires private key to create signatures.');
     }
-    var s = Signer('SHA-256/RSA');
-    var key = RSAPrivateKey(_privateKey.modulus, _privateKey.privateExponent,
+    final s = Signer('SHA-256/RSA');
+    final key = RSAPrivateKey(_privateKey.modulus, _privateKey.privateExponent,
         _privateKey.prime1, _privateKey.prime2);
-    var param = ParametersWithRandom(
+    final param = ParametersWithRandom(
       PrivateKeyParameter<RSAPrivateKey>(key),
       SecureRandom('AES/CTR/PRNG'),
     );
 
     s.init(true, param);
-    RSASignature signature = s.generateSignature(Uint8List.fromList(body));
+    final signature =
+        s.generateSignature(Uint8List.fromList(body)) as RSASignature;
 
     return signature.bytes.toList(growable: false);
   }
@@ -109,33 +110,39 @@ class JWTRsaSha256Signer implements JWTSigner {
     }
 
     try {
-      var s = Signer('SHA-256/RSA');
-      var key = RSAPublicKey(
+      final s = Signer('SHA-256/RSA');
+      final key = RSAPublicKey(
           _publicKey.modulus, BigInt.from(_publicKey.publicExponent));
-      var param = ParametersWithRandom(
+      final param = ParametersWithRandom(
         PublicKeyParameter<RSAPublicKey>(key),
         SecureRandom('AES/CTR/PRNG'),
       );
 
       s.init(false, param);
-      var rsaSignature = RSASignature(Uint8List.fromList(signature));
+      final rsaSignature = RSASignature(Uint8List.fromList(signature));
       return s.verifySignature(Uint8List.fromList(body), rsaSignature);
     } catch (e) {
       _logger.warning(
-          'RS256 token verification failed with following error: ${e}.', e);
+          'RS256 token verification failed with following error: $e.', e);
       return false;
     }
   }
 }
 
-final _jsonToBase64Url = json.fuse(utf8.fuse(base64Url));
-
-int _secondsSinceEpoch(DateTime dateTime) {
-  return (dateTime.millisecondsSinceEpoch / 1000).floor();
+Map<String, T> _decode<T>(String input) {
+  try {
+    return Map.from(
+      _jsonToBase64Url.decode(_base64Padded(input)) as Map<String, dynamic>,
+    );
+  } catch (e) {
+    throw JWTError('Could not decode token string. Error: $e.');
+  }
 }
 
+final _jsonToBase64Url = json.fuse(utf8.fuse(base64Url));
+
 String _base64Padded(String value) {
-  var mod = value.length % 4;
+  final mod = value.length % 4;
   if (mod == 0) {
     return value;
   } else if (mod == 3) {
@@ -182,14 +189,13 @@ class JWT {
   /// Allows access to the full headers map.
   ///
   /// Returned map is read-only.
-  Map<String, String> get headers => Map.unmodifiable(_headers);
-  Map<String, String> _headers;
+  final Map<String, String> headers;
 
   /// Allows access to the full claims map.
   ///
   /// Returns modifiable copy of internal map object.
   Map<String, dynamic> get claims => Map.from(_claims);
-  Map<String, dynamic> _claims;
+  final Map<String, dynamic> _claims;
 
   /// Contains original Base64 encoded token header.
   final String encodedHeader;
@@ -201,22 +207,14 @@ class JWT {
   /// if token is unsigned.
   final String signature;
 
-  JWT._(this.encodedHeader, this.encodedPayload, this.signature) {
-    try {
-      /// Dart's built-in BASE64URL codec needs padding (SDK 1.17).
-      _headers = Map<String, String>.from(
-          _jsonToBase64Url.decode(_base64Padded(encodedHeader)));
-      _claims = Map<String, dynamic>.from(
-          _jsonToBase64Url.decode(_base64Padded(encodedPayload)));
-    } catch (e) {
-      throw JWTError('Could not decode token string. Error: ${e}.');
-    }
-  }
+  JWT._(this.encodedHeader, this.encodedPayload, this.signature)
+      : headers = Map.unmodifiable(_decode(encodedHeader)),
+        _claims = _decode(encodedPayload);
 
   /// Parses [token] string and creates new instance of [JWT].
   /// Throws [JWTError] if parsing fails.
   factory JWT.parse(String token) {
-    var parts = token.split('.');
+    final parts = token.split('.');
     if (parts.length == 2) {
       return JWT._(parts.first, parts.last, null);
     } else if (parts.length == 3) {
@@ -231,35 +229,35 @@ class JWT {
   ///
   /// One should not rely on this value to determine the algorithm used to sign
   /// this token.
-  String get algorithm => _headers['alg'];
+  String get algorithm => headers['alg'];
 
   /// The issuer of this token (value of standard `iss` claim).
-  String get issuer => _claims['iss'];
+  String get issuer => _claims['iss'] as String;
 
   /// The audience of this token (value of standard `aud` claim).
-  String get audience => _claims['aud'];
+  String get audience => _claims['aud'] as String;
 
   /// The time this token was issued (value of standard `iat` claim).
-  int get issuedAt => _claims['iat'];
+  int get issuedAt => _claims['iat'] as int;
 
   /// The expiration time of this token (value of standard `exp` claim).
-  int get expiresAt => _claims['exp'];
+  int get expiresAt => _claims['exp'] as int;
 
   /// The time before which this token must not be accepted (value of standard
   /// `nbf` claim).
-  int get notBefore => _claims['nbf'];
+  int get notBefore => _claims['nbf'] as int;
 
   /// Identifies the principal that is the subject of this token (value of
   /// standard `sub` claim).
-  String get subject => _claims['sub'];
+  String get subject => _claims['sub'] as String;
 
   /// Unique identifier of this token (value of standard `jti` claim).
-  String get id => _claims['jti'];
+  String get id => _claims['jti'] as String;
 
   @override
   String toString() {
-    var buffer = StringBuffer();
-    buffer.writeAll([encodedHeader, '.', encodedPayload]);
+    final buffer = StringBuffer()
+      ..writeAll([encodedHeader, '.', encodedPayload]);
     if (signature is String) {
       buffer.writeAll(['.', signature]);
     }
@@ -270,8 +268,8 @@ class JWT {
   ///
   /// Returns `true` if signature is valid and `false` otherwise.
   bool verify(JWTSigner signer) {
-    var body = utf8.encode(encodedHeader + '.' + encodedPayload);
-    var sign = base64Url.decode(_base64Padded(signature));
+    final body = utf8.encode('$encodedHeader.$encodedPayload');
+    final sign = base64Url.decode(_base64Padded(signature));
     return signer.verify(body, sign);
   }
 
@@ -296,17 +294,17 @@ class JWTBuilder {
 
   /// Token issued at timestamp in seconds (standard `iat` claim).
   set issuedAt(DateTime issuedAt) {
-    _claims['iat'] = _secondsSinceEpoch(issuedAt);
+    _claims['iat'] = secondsSinceEpoch(issuedAt);
   }
 
   /// Token expires timestamp in seconds (standard `exp` claim).
   set expiresAt(DateTime expiresAt) {
-    _claims['exp'] = _secondsSinceEpoch(expiresAt);
+    _claims['exp'] = secondsSinceEpoch(expiresAt);
   }
 
   /// Sets value for standard `nbf` claim.
   set notBefore(DateTime notBefore) {
-    _claims['nbf'] = _secondsSinceEpoch(notBefore);
+    _claims['nbf'] = secondsSinceEpoch(notBefore);
   }
 
   /// Sets standard `sub` claim value.
@@ -322,10 +320,13 @@ class JWTBuilder {
   ///
   /// This method cannot be used to
   /// set values of standard (reserved) claims.
-  void setClaim(String name, value) {
+  void setClaim(String name, Object value) {
     if (JWT.reservedClaims.contains(name.toLowerCase())) {
       throw ArgumentError.value(
-          name, 'name', 'Only custom claims can be set with setClaim.');
+        name,
+        'name',
+        'Only custom claims can be set with setClaim.',
+      );
     }
     _claims[name] = value;
   }
@@ -333,10 +334,13 @@ class JWTBuilder {
   /// Sets value of a private (custom) header.
   ///
   /// This method cannot be used to update standard (reserved) headers.
-  void setHeader(String name, value) {
+  void setHeader(String name, Object value) {
     if (JWT.reservedHeaders.contains(name.toLowerCase())) {
       throw ArgumentError.value(
-          name, 'name', 'Only custom headers can be set with setHeader.');
+        name,
+        'name',
+        'Only custom headers can be set with setHeader.',
+      );
     }
     _headers[name] = value;
   }
@@ -359,8 +363,8 @@ class JWTBuilder {
     _headers['alg'] = signer.algorithm;
     final encodedHeader = _base64Unpadded(_jsonToBase64Url.encode(_headers));
     final encodedPayload = _base64Unpadded(_jsonToBase64Url.encode(_claims));
-    var body = encodedHeader + '.' + encodedPayload;
-    var signature =
+    final body = '$encodedHeader.$encodedPayload';
+    final signature =
         _base64Unpadded(base64Url.encode(signer.sign(utf8.encode(body))));
     return JWT._(encodedHeader, encodedPayload, signature);
   }
@@ -369,7 +373,9 @@ class JWTBuilder {
 /// Signer interface for JWT.
 abstract class JWTSigner {
   String get algorithm;
+
   List<int> sign(List<int> body);
+
   bool verify(List<int> body, List<int> signature);
 }
 
@@ -390,7 +396,7 @@ class JWTHmacSha256Signer implements JWTSigner {
 
   @override
   bool verify(List<int> body, List<int> signature) {
-    var actual = sign(body);
+    final actual = sign(body);
     if (actual.length == signature.length) {
       // constant-time comparison
       var isEqual = true;
@@ -429,9 +435,9 @@ class JWTValidator {
   /// will also be verified. Otherwise signature must be verified manually using
   /// [JWT.verify] method.
   Set<String> validate(JWT token, {JWTSigner signer}) {
-    var errors = <String>{};
+    final errors = <String>{};
 
-    var currentTimestamp = _secondsSinceEpoch(currentTime);
+    final currentTimestamp = secondsSinceEpoch(currentTime);
     if (token.expiresAt is int && currentTimestamp >= token.expiresAt) {
       errors.add('The token has expired.');
     }

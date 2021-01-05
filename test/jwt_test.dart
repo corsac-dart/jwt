@@ -1,11 +1,8 @@
 library corsac_jwt.test;
 
 import 'package:corsac_jwt/corsac_jwt.dart';
+import 'package:corsac_jwt/src/utils.dart';
 import 'package:test/test.dart';
-
-int _secondsSinceEpoch(DateTime dateTime) {
-  return (dateTime.millisecondsSinceEpoch / 1000).floor();
-}
 
 void main() {
   group('$JWT', () {
@@ -14,8 +11,7 @@ void main() {
 
     setUp(() {
       now = DateTime.now();
-      builder = JWTBuilder();
-      builder
+      builder = JWTBuilder()
         ..issuer = 'https://mycompany.com'
         ..audience = 'people'
         ..issuedAt = now
@@ -31,14 +27,14 @@ void main() {
     });
 
     test('JWTBuilder can build unsigned token', () {
-      var token = builder.getToken();
+      final token = builder.getToken();
       expect(token, const TypeMatcher<JWT>());
       expect(token.issuer, equals('https://mycompany.com'));
     });
 
     test('JWTBuilder can build signed token', () {
-      var signer = JWTHmacSha256Signer('secret1');
-      var token = builder.getSignedToken(signer);
+      final signer = JWTHmacSha256Signer('secret1');
+      final token = builder.getSignedToken(signer);
 
       expect(token, const TypeMatcher<JWT>());
       expect(token.issuer, equals('https://mycompany.com'));
@@ -47,10 +43,11 @@ void main() {
     });
 
     test('it parses string token', () {
-      var signer = JWTHmacSha256Signer('secret1');
-      var stringToken =
-          'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL215Y29tcGFueS5jb20ifQ.R7OVbiAKtvSkE-qF0fCkZP_m2JGrHobbRayHhEsKuKU';
-      var token = JWT.parse(stringToken);
+      final signer = JWTHmacSha256Signer('secret1');
+      const stringToken =
+          'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL215Y29tcGF'
+          'ueS5jb20ifQ.R7OVbiAKtvSkE-qF0fCkZP_m2JGrHobbRayHhEsKuKU';
+      final token = JWT.parse(stringToken);
 
       expect(token, const TypeMatcher<JWT>());
       expect(token.issuer, equals('https://mycompany.com'));
@@ -59,11 +56,14 @@ void main() {
     });
 
     test('it parses another token', () {
-      var signer = JWTHmacSha256Signer('secret');
-      var stringToken =
-          'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL215Zm9vYmFyLmNvbSIsImlhdCI6MTQ1NTIzMjI2NywiZXhwIjoxNDU1MjM0MDY3LCJuYmYiOjE0NTUyMzIyMzcsImJvZHkiOnsiYmxhaCI6ImJvb2EifX0.PXbDbE7YapU-6WvRqbdQ2OC1N2DScadvuQUqTHXopNc';
+      final signer = JWTHmacSha256Signer('secret');
+      const stringToken =
+          'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL215Zm9vYmF'
+          'yLmNvbSIsImlhdCI6MTQ1NTIzMjI2NywiZXhwIjoxNDU1MjM0MDY3LCJuYmYiOjE0NTU'
+          'yMzIyMzcsImJvZHkiOnsiYmxhaCI6ImJvb2EifX0.PXbDbE7YapU-6WvRqbdQ2OC1N2D'
+          'ScadvuQUqTHXopNc';
 
-      var token = JWT.parse(stringToken);
+      final token = JWT.parse(stringToken);
 
       expect(token, const TypeMatcher<JWT>());
       expect(token.issuer, equals('https://myfoobar.com'));
@@ -73,9 +73,10 @@ void main() {
     });
 
     test('it throws JWTError if token is invalid', () {
-      var badToken1 =
-          'invalid.eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL215Y29tcGFueS5jb20ifQ.R7OVbiAKtvSkE-qF0fCkZP_m2JGrHobbRayHhEsKuKU';
-      var badToken2 = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.invalid';
+      const badToken1 =
+          'invalid.eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL21'
+          '5Y29tcGFueS5jb20ifQ.R7OVbiAKtvSkE-qF0fCkZP_m2JGrHobbRayHhEsKuKU';
+      const badToken2 = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.invalid';
       expect(
           () => JWT.parse(badToken1), throwsA(const TypeMatcher<JWTError>()));
       expect(
@@ -83,13 +84,13 @@ void main() {
     });
 
     test('it supports all standard claims', () {
-      var token = builder.getToken();
+      final token = builder.getToken();
       expect(token, const TypeMatcher<JWT>());
       expect(token.issuer, equals('https://mycompany.com'));
       expect(token.audience, equals('people'));
-      expect(token.issuedAt, equals(_secondsSinceEpoch(now)));
-      expect(token.expiresAt, equals(_secondsSinceEpoch(now) + 10));
-      expect(token.notBefore, equals(_secondsSinceEpoch(now) + 5));
+      expect(token.issuedAt, equals(secondsSinceEpoch(now)));
+      expect(token.expiresAt, equals(secondsSinceEpoch(now) + 10));
+      expect(token.notBefore, equals(secondsSinceEpoch(now) + 5));
       expect(token.id, equals('identifier'));
       expect(token.subject, equals('subj'));
       expect(token.algorithm, equals('none'));
@@ -104,19 +105,19 @@ void main() {
         ..issuer = 'https://foobar.com'
         ..setClaim('pld', 'payload')
         ..setClaim('map', {'key': 'value'});
-      var token = builder.getToken();
+      final token = builder.getToken();
       expect(token.issuer, equals('https://foobar.com'));
       expect(token.getClaim('pld'), equals('payload'));
       expect(token.getClaim('map'), equals({'key': 'value'}));
 
-      var stringToken = token.toString();
-      var parsedToken = JWT.parse(stringToken);
+      final stringToken = token.toString();
+      final parsedToken = JWT.parse(stringToken);
 
       expect(parsedToken.issuer, equals('https://foobar.com'));
       expect(parsedToken.getClaim('pld'), equals('payload'));
       expect(parsedToken.getClaim('map'), equals({'key': 'value'}));
 
-      var claims = parsedToken.claims;
+      final claims = parsedToken.claims;
 
       expect(claims['pld'], equals('payload'));
       expect(claims['map'], equals({'key': 'value'}));
@@ -130,12 +131,12 @@ void main() {
       builder
         ..issuer = 'https://foobar.com'
         ..setHeader('x5t', 'payload');
-      var token = builder.getToken();
+      final token = builder.getToken();
       expect(token.issuer, equals('https://foobar.com'));
       expect(token.headers['x5t'], equals('payload'));
 
-      var stringToken = token.toString();
-      var parsedToken = JWT.parse(stringToken);
+      final stringToken = token.toString();
+      final parsedToken = JWT.parse(stringToken);
 
       expect(parsedToken.issuer, equals('https://foobar.com'));
       expect(parsedToken.headers['x5t'], equals('payload'));
@@ -153,9 +154,9 @@ void main() {
     });
 
     test('iss claim is validated', () {
-      var token = builder.getToken();
-      var time = DateTime.now().add(Duration(seconds: 6));
-      var validator = JWTValidator(currentTime: time)..issuer = 'wrong';
+      final token = builder.getToken();
+      final time = DateTime.now().add(Duration(seconds: 6));
+      final validator = JWTValidator(currentTime: time)..issuer = 'wrong';
       var errors = validator.validate(token);
       expect(errors, isNotEmpty);
       expect(errors, contains('The token issuer is invalid.'));
@@ -166,7 +167,7 @@ void main() {
     });
 
     test('exp claim is validated', () {
-      var token = builder.getToken();
+      final token = builder.getToken();
       var validator =
           JWTValidator(currentTime: DateTime.now().add(Duration(seconds: 20)));
       var errors = validator.validate(token);
@@ -180,7 +181,7 @@ void main() {
     });
 
     test('iat claim is validated', () {
-      var token = builder.getToken();
+      final token = builder.getToken();
 
       var validator = JWTValidator(
           currentTime: DateTime.now().subtract(Duration(seconds: 1)));
@@ -188,14 +189,14 @@ void main() {
       expect(errors, isNotEmpty);
       expect(errors, contains('The token issuedAt time is in future.'));
 
-      var time = DateTime.now().add(Duration(seconds: 6));
+      final time = DateTime.now().add(Duration(seconds: 6));
       validator = JWTValidator(currentTime: time);
       errors = validator.validate(token);
       expect(errors, isEmpty);
     });
 
     test('nbf claim is validated', () {
-      var token = builder.getToken();
+      final token = builder.getToken();
       var validator =
           JWTValidator(currentTime: DateTime.now().add(Duration(seconds: 1)));
       var errors = validator.validate(token);
@@ -203,16 +204,16 @@ void main() {
       expect(errors,
           contains('The token can not be accepted due to notBefore policy.'));
 
-      var time = DateTime.now().add(Duration(seconds: 6));
+      final time = DateTime.now().add(Duration(seconds: 6));
       validator = JWTValidator(currentTime: time);
       errors = validator.validate(token);
       expect(errors, isEmpty);
     });
 
     test('aud claim is validated', () {
-      var token = builder.getToken();
-      var time = DateTime.now().add(Duration(seconds: 6));
-      var validator = JWTValidator(currentTime: time)..audience = 'wrong';
+      final token = builder.getToken();
+      final time = DateTime.now().add(Duration(seconds: 6));
+      final validator = JWTValidator(currentTime: time)..audience = 'wrong';
       var errors = validator.validate(token);
       expect(errors, isNotEmpty);
       expect(errors, contains('The token audience is invalid.'));
@@ -223,9 +224,9 @@ void main() {
     });
 
     test('sub claim is validated', () {
-      var token = builder.getToken();
-      var time = DateTime.now().add(Duration(seconds: 6));
-      var validator = JWTValidator(currentTime: time)..subject = 'wrong';
+      final token = builder.getToken();
+      final time = DateTime.now().add(Duration(seconds: 6));
+      final validator = JWTValidator(currentTime: time)..subject = 'wrong';
       var errors = validator.validate(token);
       expect(errors, isNotEmpty);
       expect(errors, contains('The token subject is invalid.'));
@@ -236,9 +237,9 @@ void main() {
     });
 
     test('jti claim is validated', () {
-      var token = builder.getToken();
-      var time = DateTime.now().add(Duration(seconds: 6));
-      var validator = JWTValidator(currentTime: time)..id = 'wrong';
+      final token = builder.getToken();
+      final time = DateTime.now().add(Duration(seconds: 6));
+      final validator = JWTValidator(currentTime: time)..id = 'wrong';
       var errors = validator.validate(token);
       expect(errors, isNotEmpty);
       expect(errors, contains('The token unique identifier is invalid.'));
@@ -249,11 +250,11 @@ void main() {
     });
 
     test('signature is validated', () {
-      var signer = JWTHmacSha256Signer('secret');
+      final signer = JWTHmacSha256Signer('secret');
 
-      var token = builder.getSignedToken(signer);
-      var time = DateTime.now().add(Duration(seconds: 6));
-      var validator = JWTValidator(currentTime: time);
+      final token = builder.getSignedToken(signer);
+      final time = DateTime.now().add(Duration(seconds: 6));
+      final validator = JWTValidator(currentTime: time);
       var errors =
           validator.validate(token, signer: JWTHmacSha256Signer('invalid'));
       expect(errors, isNotEmpty);
@@ -264,10 +265,10 @@ void main() {
     });
 
     test('it provides read-only access to headers', () {
-      builder..issuer = 'https://foobar.com';
-      var token = builder.getToken();
+      builder.issuer = 'https://foobar.com';
+      final token = builder.getToken();
 
-      var headers = token.headers;
+      final headers = token.headers;
       expect(headers['typ'], 'JWT');
       expect(headers['alg'], 'none');
       expect(() {

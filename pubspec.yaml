@@ -1,5 +1,5 @@
 name: corsac_jwt
-version: 0.4.0
+version: 0.4.1-dev
 description: Lightweight implementation of JSON Web Tokens (JWT).
 homepage: https://github.com/corsac-dart/jwt
 author: Anatoly Pulyaevskiy <anatoly.pulyaevskiy@gmail.com>
@@ -9,12 +9,12 @@ environment:
 
 dependencies:
   asn1lib: "^0.8.1"
+  crypto: "^2.1.5"
   logging: "^0.11.4"
   pointycastle: "^2.0.0"
   rsa_pkcs: "^1.1.4"
-  crypto: "^2.1.5"
 
 dev_dependencies:
+  pedantic: "^1.9.2"
   test: "^1.15.4"
   test_coverage: "^0.5.0"
-  pedantic: "^1.9.2"
