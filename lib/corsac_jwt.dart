@@ -41,8 +41,8 @@ import 'src/utils.dart';
 final _logger = Logger('JWTRsaSha256Signer');
 
 class JWTRsaSha256Signer implements JWTSigner {
-  final rsa.RSAPrivateKey _privateKey;
-  final rsa.RSAPublicKey _publicKey;
+  final rsa.RSAPrivateKey? _privateKey;
+  final rsa.RSAPublicKey? _publicKey;
 
   JWTRsaSha256Signer._(this._privateKey, this._publicKey);
 
@@ -55,11 +55,11 @@ class JWTRsaSha256Signer implements JWTSigner {
   /// Both `privateKey` and `publicKey` are expected to be strings in PEM
   /// format.
   factory JWTRsaSha256Signer(
-      {String privateKey, String publicKey, String password}) {
+      {String? privateKey, String? publicKey, String? password}) {
     final parser = rsa.RSAPKCSParser();
 
-    rsa.RSAPrivateKey priv;
-    rsa.RSAPublicKey pub;
+    rsa.RSAPrivateKey? priv;
+    rsa.RSAPublicKey? pub;
     if (privateKey is String) {
       final pair = parser.parsePEM(privateKey, password: password);
       if (pair.private is! rsa.RSAPrivateKey) {
@@ -88,8 +88,8 @@ class JWTRsaSha256Signer implements JWTSigner {
           'RS256 signer requires private key to create signatures.');
     }
     final s = Signer('SHA-256/RSA');
-    final key = RSAPrivateKey(_privateKey.modulus, _privateKey.privateExponent,
-        _privateKey.prime1, _privateKey.prime2);
+    final key = RSAPrivateKey(_privateKey!.modulus,
+        _privateKey!.privateExponent, _privateKey!.prime1, _privateKey!.prime2);
     final param = ParametersWithRandom(
       PrivateKeyParameter<RSAPrivateKey>(key),
       SecureRandom('AES/CTR/PRNG'),
@@ -112,7 +112,7 @@ class JWTRsaSha256Signer implements JWTSigner {
     try {
       final s = Signer('SHA-256/RSA');
       final key = RSAPublicKey(
-          _publicKey.modulus, BigInt.from(_publicKey.publicExponent));
+          _publicKey!.modulus, BigInt.from(_publicKey!.publicExponent));
       final param = ParametersWithRandom(
         PublicKeyParameter<RSAPublicKey>(key),
         SecureRandom('AES/CTR/PRNG'),
@@ -205,7 +205,7 @@ class JWT {
 
   /// Contains original Base64 encoded token signature, or `null`
   /// if token is unsigned.
-  final String signature;
+  final String? signature;
 
   JWT._(this.encodedHeader, this.encodedPayload, this.signature)
       : headers = Map.unmodifiable(_decode(encodedHeader)),
@@ -229,30 +229,30 @@ class JWT {
   ///
   /// One should not rely on this value to determine the algorithm used to sign
   /// this token.
-  String get algorithm => headers['alg'];
+  String? get algorithm => headers['alg'];
 
   /// The issuer of this token (value of standard `iss` claim).
-  String get issuer => _claims['iss'] as String;
+  String? get issuer => _claims['iss'] as String?;
 
   /// The audience of this token (value of standard `aud` claim).
-  String get audience => _claims['aud'] as String;
+  String? get audience => _claims['aud'] as String?;
 
   /// The time this token was issued (value of standard `iat` claim).
-  int get issuedAt => _claims['iat'] as int;
+  int? get issuedAt => _claims['iat'] as int?;
 
   /// The expiration time of this token (value of standard `exp` claim).
-  int get expiresAt => _claims['exp'] as int;
+  int? get expiresAt => _claims['exp'] as int?;
 
   /// The time before which this token must not be accepted (value of standard
   /// `nbf` claim).
-  int get notBefore => _claims['nbf'] as int;
+  int? get notBefore => _claims['nbf'] as int?;
 
   /// Identifies the principal that is the subject of this token (value of
   /// standard `sub` claim).
-  String get subject => _claims['sub'] as String;
+  String? get subject => _claims['sub'] as String?;
 
   /// Unique identifier of this token (value of standard `jti` claim).
-  String get id => _claims['jti'] as String;
+  String? get id => _claims['jti'] as String?;
 
   @override
   String toString() {
@@ -266,10 +266,15 @@ class JWT {
 
   /// Verifies this token's signature using [signer].
   ///
-  /// Returns `true` if signature is valid and `false` otherwise.
+  /// Returns `true` if token is signed and signature is valid, and `false`
+  /// otherwise.
   bool verify(JWTSigner signer) {
+    if (signature == null) {
+      return false;
+    }
+
     final body = utf8.encode('$encodedHeader.$encodedPayload');
-    final sign = base64Url.decode(_base64Padded(signature));
+    final sign = base64Url.decode(_base64Padded(signature!));
     return signer.verify(body, sign);
   }
 
@@ -418,14 +423,14 @@ class JWTHmacSha256Signer implements JWTSigner {
 class JWTValidator {
   /// Current time used to validate token's `iat`, `exp` and `nbf` claims.
   final DateTime currentTime;
-  String issuer;
-  String audience;
-  String subject;
-  String id;
+  String? issuer;
+  String? audience;
+  String? subject;
+  String? id;
 
   /// Creates new validator. One can supply custom value for [currentTime]
-  /// parameter, if not the `DateTime.now()` value is used by default.
-  JWTValidator({DateTime currentTime})
+  /// parameter, if not [DateTime.now] is used by default.
+  JWTValidator({DateTime? currentTime})
       : currentTime = currentTime ?? DateTime.now();
 
   /// Validates provided [token] and returns a list of validation errors.
@@ -434,39 +439,40 @@ class JWTValidator {
   /// If [signer] parameter is provided then token signature
   /// will also be verified. Otherwise signature must be verified manually using
   /// [JWT.verify] method.
-  Set<String> validate(JWT token, {JWTSigner signer}) {
-    final errors = <String>{};
 
+  Set<String> validate(JWT token, {JWTSigner? signer}) {
+    final errors = <String>{};
     final currentTimestamp = secondsSinceEpoch(currentTime);
-    if (token.expiresAt is int && currentTimestamp >= token.expiresAt) {
+
+    if (token.expiresAt != null && currentTimestamp >= token.expiresAt!) {
       errors.add('The token has expired.');
     }
 
-    if (token.issuedAt is int && currentTimestamp < token.issuedAt) {
+    if (token.issuedAt != null && currentTimestamp < token.issuedAt!) {
       errors.add('The token issuedAt time is in future.');
     }
 
-    if (token.notBefore is int && currentTimestamp < token.notBefore) {
+    if (token.notBefore != null && currentTimestamp < token.notBefore!) {
       errors.add('The token can not be accepted due to notBefore policy.');
     }
 
-    if (issuer is String && issuer != token.issuer) {
+    if (issuer != null && issuer != token.issuer) {
       errors.add('The token issuer is invalid.');
     }
 
-    if (audience is String && audience != token.audience) {
+    if (audience != null && audience != token.audience) {
       errors.add('The token audience is invalid.');
     }
 
-    if (subject is String && subject != token.subject) {
+    if (subject != null && subject != token.subject) {
       errors.add('The token subject is invalid.');
     }
 
-    if (id is String && id != token.id) {
+    if (id != null && id != token.id) {
       errors.add('The token unique identifier is invalid.');
     }
 
-    if (signer is JWTSigner && !token.verify(signer)) {
+    if (signer != null && !token.verify(signer)) {
       errors.add('The token signature is invalid.');
     }
 

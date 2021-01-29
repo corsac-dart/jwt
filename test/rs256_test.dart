@@ -5,12 +5,9 @@ import 'package:test/test.dart';
 
 void main() {
   group('RS256: ', () {
-    JWTRsaSha256Signer signer;
-    setUp(() {
-      final priv = File('test/resources/private.pem').readAsStringSync();
-      final pub = File('test/resources/public.pem').readAsStringSync();
-      signer = JWTRsaSha256Signer(privateKey: priv, publicKey: pub);
-    });
+    final priv = File('test/resources/private.pem').readAsStringSync();
+    final pub = File('test/resources/public.pem').readAsStringSync();
+    final signer = JWTRsaSha256Signer(privateKey: priv, publicKey: pub);
 
     test('it can sign and verify JWT with RS256', () {
       final builder = JWTBuilder()
