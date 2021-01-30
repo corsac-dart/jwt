@@ -33,7 +33,9 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:logging/logging.dart';
+// ignore: import_of_legacy_library_into_null_safe
 import 'package:pointycastle/pointycastle.dart';
+// ignore: import_of_legacy_library_into_null_safe
 import 'package:rsa_pkcs/rsa_pkcs.dart' as rsa;
 
 import 'src/utils.dart';
