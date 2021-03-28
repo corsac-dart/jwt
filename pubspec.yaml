@@ -8,10 +8,10 @@ environment:
   sdk: ">=2.12.0-0 <3.0.0"
 
 dependencies:
-  asn1lib: ^0.9.0-nullsafety.0
+  asn1lib: ^1.0.0
   crypto: ^3.0.0
   logging: ^1.0.0
-  pointycastle: ^3.0.0-nullsafety.2
+  pointycastle: ^3.0.0
   rsa_pkcs: ^1.1.4
 
 dev_dependencies:
