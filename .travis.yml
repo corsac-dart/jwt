@@ -8,10 +8,10 @@ dart:
 
 script:
   - pub get
-  - pub run --no-sound-null-safety test -r expanded
+  - pub run test -r expanded
   - dartfmt -n --set-exit-if-changed lib/
   - dart analyze --fatal-infos --fatal-warnings .
-  - pub run --no-sound-null-safety test_coverage
+  - pub run test_coverage
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
