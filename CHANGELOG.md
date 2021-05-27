@@ -1,3 +1,7 @@
+## 1.0.0
+
+- Support null safety (#21)
+
 ## 0.4.0
 
 - Allow setting custom headers. See `JWTBuilder.setHeader` for details.
