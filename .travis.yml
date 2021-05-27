@@ -3,7 +3,7 @@ sudo: false
 language: dart
 
 dart:
-- beta
+- stable
 - dev
 
 script:
