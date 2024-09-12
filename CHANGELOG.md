@@ -1,3 +1,8 @@
+## 1.0.0
+
+- Allow setting `kid` header from signers.
+- Allow setting standard `typ` header from builder.
+
 ## 1.0.0-nullsafety.1
 
 - Support null safety (#21)

@@ -43,8 +43,10 @@ final _logger = Logger('JWTRsaSha256Signer');
 class JWTRsaSha256Signer implements JWTSigner {
   final rsa.RSAPrivateKey? _privateKey;
   final rsa.RSAPublicKey? _publicKey;
+  @override
+  final String? kid;
 
-  JWTRsaSha256Signer._(this._privateKey, this._publicKey);
+  JWTRsaSha256Signer._(this._privateKey, this._publicKey, this.kid);
 
   /// Creates new signer.
   ///
@@ -55,7 +57,7 @@ class JWTRsaSha256Signer implements JWTSigner {
   /// Both `privateKey` and `publicKey` are expected to be strings in PEM
   /// format.
   factory JWTRsaSha256Signer(
-      {String? privateKey, String? publicKey, String? password}) {
+      {String? privateKey, String? publicKey, String? password, String? kid}) {
     final parser = rsa.RSAPKCSParser();
 
     rsa.RSAPrivateKey? priv;
@@ -75,7 +77,7 @@ class JWTRsaSha256Signer implements JWTSigner {
       }
       pub = pair.public;
     }
-    return JWTRsaSha256Signer._(priv, pub);
+    return JWTRsaSha256Signer._(priv, pub, kid);
   }
 
   @override
@@ -184,7 +186,7 @@ class JWT {
   ];
 
   /// List of reserved headers.
-  static const reservedHeaders = ['typ', 'alg'];
+  static const reservedHeaders = ['alg', 'kid'];
 
   /// Allows access to the full headers map.
   ///
@@ -317,8 +319,14 @@ class JWTBuilder {
     _claims['sub'] = subject;
   }
 
+  /// Sets standard `jti` claim value.
   set id(String id) {
     _claims['jti'] = id;
+  }
+
+  /// Sets standard `typ` header.
+  set typ(String typ) {
+    setHeader('typ', typ);
   }
 
   /// Sets value of private (custom) claim.
@@ -365,7 +373,11 @@ class JWTBuilder {
   ///
   /// To create unsigned token use [getToken].
   JWT getSignedToken(JWTSigner signer) {
+    // Set the algorithm and optionally kid headers for the resulting token.
     _headers['alg'] = signer.algorithm;
+    if (signer.kid != null) {
+      _headers['kid'] = signer.kid;
+    }
     final encodedHeader = _base64Unpadded(_jsonToBase64Url.encode(_headers));
     final encodedPayload = _base64Unpadded(_jsonToBase64Url.encode(_claims));
     final body = '$encodedHeader.$encodedPayload';
@@ -377,7 +389,11 @@ class JWTBuilder {
 
 /// Signer interface for JWT.
 abstract class JWTSigner {
+  /// The algorithm of this signer.
   String get algorithm;
+
+  /// Optinal `kid` header to set in the signed token.
+  String? get kid;
 
   List<int> sign(List<int> body);
 
@@ -387,8 +403,10 @@ abstract class JWTSigner {
 /// Signer implementing HMAC encryption using SHA256 hashing.
 class JWTHmacSha256Signer implements JWTSigner {
   final List<int> secret;
+  @override
+  final String? kid;
 
-  JWTHmacSha256Signer(String secret) : secret = utf8.encode(secret);
+  JWTHmacSha256Signer(String secret, {this.kid}) : secret = utf8.encode(secret);
 
   @override
   String get algorithm => 'HS256';
