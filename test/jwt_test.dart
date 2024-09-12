@@ -143,7 +143,7 @@ void main() {
 
     test('it throws error for updating reserved headers', () {
       expect(() {
-        builder.setHeader('typ', 'error');
+        builder.setHeader('alg', 'error');
       }, throwsArgumentError);
     });
 
