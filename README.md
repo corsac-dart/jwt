@@ -32,8 +32,9 @@ void main() {
 
 Supported signers:
 
-* HS256 (`JwtHmacSha256Signer`).
-* RS256 (`JwtRsaSha256Signer`)
+* HS256 (`JWTHmacSha256Signer`).
+* RS256 (`JWTRsaSha256Signer`)
+* ES256 (`JWTEcdsaSha256Signer`)
 
 Refer to documentation for more details.
 

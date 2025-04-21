@@ -1,3 +1,7 @@
+## 2.0.0+1
+
+* Minor readme updates.
+
 ## 2.0.0
 
 - Switched to package:jose for key parsing, signing and verification logic
