@@ -4,35 +4,31 @@ import 'package:corsac_jwt/corsac_jwt.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('RS256: ', () {
-    final priv = File('test/resources/private.pem').readAsStringSync();
-    final signer = JWTRsaSha256Signer(pem: priv);
+  group('ES256: ', () {
+    final pem = File('test/resources/ec_private_key.pem').readAsStringSync();
+    final signer = JWTEcdsaSha256Signer(pem: pem);
 
-    test('it can sign and verify JWT with RS256', () {
+    test('it can sign and verify JWT with ES256', () {
       final builder = JWTBuilder()
         ..issuer = 'abc.com'
         ..expiresAt = DateTime.now().add(Duration(minutes: 3));
       final token = builder.getSignedToken(signer);
 
-      expect(token.algorithm, 'RS256');
+      expect(token.algorithm, 'ES256');
       expect(token.verify(signer), isTrue);
     });
 
-    test('it can verify with only public key pem', () {
+    test('it supports PKCS8 pem format', () {
+      final pem = File('test/resources/ec_private_key_pkcs8.pem').readAsStringSync();
+      final signer = JWTEcdsaSha256Signer(pem: pem);
+
       final builder = JWTBuilder()
         ..issuer = 'abc.com'
         ..expiresAt = DateTime.now().add(Duration(minutes: 3));
       final token = builder.getSignedToken(signer);
 
-      final pub = File('test/resources/public.pem').readAsStringSync();
-      final verifier = JWTRsaSha256Signer(pem: pub);
-
-      expect(token.algorithm, 'RS256');
-      expect(token.verify(verifier), isTrue);
-
-      expect(() {
-        builder.getSignedToken(verifier);
-      }, throwsStateError);
+      expect(token.algorithm, 'ES256');
+      expect(token.verify(signer), isTrue);
     });
 
     test('it handles exceptions on verification', () {

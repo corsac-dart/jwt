@@ -1,3 +1,18 @@
+## 2.0.0
+
+- Switched to package:jose for key parsing, signing and verification logic
+- Added ES256 signer
+- Removed no longer used dependencies
+- Breaking change: the RS256 signer constructor, changed:
+  ```
+  // from:
+  JWTRsaSha256Signer({String? privateKey, String? publicKey, String? password, String? kid})
+  // to:
+  JWTRsaSha256Signer({required String pem, String? kid})
+  ```
+  The `password` argument was never implemented by the underlying package so removed to avoid confusion.
+  The single `pem` param now can be used to represent either the private key or public key.
+
 ## 1.0.1
 
 - Internal changes.

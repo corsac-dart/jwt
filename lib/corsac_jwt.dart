@@ -29,107 +29,14 @@
 library corsac_jwt;
 
 import 'dart:convert';
-import 'dart:typed_data';
 
-import 'package:crypto/crypto.dart';
-import 'package:logging/logging.dart';
-import 'package:pointycastle/pointycastle.dart';
-import 'package:rsa_pkcs/rsa_pkcs.dart' as rsa;
-
+import 'src/signer.dart';
 import 'src/utils.dart';
 
-final _logger = Logger('JWTRsaSha256Signer');
-
-class JWTRsaSha256Signer implements JWTSigner {
-  final rsa.RSAPrivateKey? _privateKey;
-  final rsa.RSAPublicKey? _publicKey;
-  @override
-  final String? kid;
-
-  JWTRsaSha256Signer._(this._privateKey, this._publicKey, this.kid);
-
-  /// Creates new signer.
-  ///
-  /// [privateKey] is only required when signing new tokens and otherwise can
-  /// be left as `null`. Similarly [publicKey] is only used to verify existing
-  /// signatures.
-  ///
-  /// Both `privateKey` and `publicKey` are expected to be strings in PEM
-  /// format.
-  factory JWTRsaSha256Signer(
-      {String? privateKey, String? publicKey, String? password, String? kid}) {
-    final parser = rsa.RSAPKCSParser();
-
-    rsa.RSAPrivateKey? priv;
-    rsa.RSAPublicKey? pub;
-    if (privateKey is String) {
-      final pair = parser.parsePEM(privateKey, password: password);
-      if (pair.private is! rsa.RSAPrivateKey) {
-        throw JWTError('Invalid private RSA key.');
-      }
-      priv = pair.private;
-    }
-
-    if (publicKey is String) {
-      final pair = parser.parsePEM(publicKey, password: password);
-      if (pair.public is! rsa.RSAPublicKey) {
-        throw JWTError('Invalid public RSA key.');
-      }
-      pub = pair.public;
-    }
-    return JWTRsaSha256Signer._(priv, pub, kid);
-  }
-
-  @override
-  String get algorithm => 'RS256';
-
-  @override
-  List<int> sign(List<int> body) {
-    if (_privateKey == null) {
-      throw StateError(
-          'RS256 signer requires private key to create signatures.');
-    }
-    final s = Signer('SHA-256/RSA');
-    final key = RSAPrivateKey(_privateKey!.modulus,
-        _privateKey!.privateExponent, _privateKey!.prime1, _privateKey!.prime2);
-    final param = ParametersWithRandom(
-      PrivateKeyParameter<RSAPrivateKey>(key),
-      SecureRandom('AES/CTR/PRNG'),
-    );
-
-    s.init(true, param);
-    final signature =
-        s.generateSignature(Uint8List.fromList(body)) as RSASignature;
-
-    return signature.bytes.toList(growable: false);
-  }
-
-  @override
-  bool verify(List<int> body, List<int> signature) {
-    if (_publicKey == null) {
-      throw StateError(
-          'RS256 signer requires public key to verify signatures.');
-    }
-
-    try {
-      final s = Signer('SHA-256/RSA');
-      final key = RSAPublicKey(
-          _publicKey!.modulus, BigInt.from(_publicKey!.publicExponent));
-      final param = ParametersWithRandom(
-        PublicKeyParameter<RSAPublicKey>(key),
-        SecureRandom('AES/CTR/PRNG'),
-      );
-
-      s.init(false, param);
-      final rsaSignature = RSASignature(Uint8List.fromList(signature));
-      return s.verifySignature(Uint8List.fromList(body), rsaSignature);
-    } catch (e) {
-      _logger.warning(
-          'RS256 token verification failed with following error: $e.', e);
-      return false;
-    }
-  }
-}
+export 'src/es256.dart';
+export 'src/hs256.dart';
+export 'src/rs256.dart';
+export 'src/signer.dart';
 
 Map<String, T> _decode<T>(String input) {
   try {
@@ -175,15 +82,7 @@ class JWTError implements Exception {
 /// JSON Web Token.
 class JWT {
   /// List of standard (reserved) claims.
-  static const reservedClaims = [
-    'iss',
-    'aud',
-    'iat',
-    'exp',
-    'nbf',
-    'sub',
-    'jti'
-  ];
+  static const reservedClaims = ['iss', 'aud', 'iat', 'exp', 'nbf', 'sub', 'jti'];
 
   /// List of reserved headers.
   static const reservedHeaders = ['alg', 'kid'];
@@ -233,6 +132,9 @@ class JWT {
   /// this token.
   String? get algorithm => headers['alg'];
 
+  /// Id of the key used to sign this token.
+  String? get keyId => headers['kid'];
+
   /// The issuer of this token (value of standard `iss` claim).
   String? get issuer => _claims['iss'] as String?;
 
@@ -258,8 +160,7 @@ class JWT {
 
   @override
   String toString() {
-    final buffer = StringBuffer()
-      ..writeAll([encodedHeader, '.', encodedPayload]);
+    final buffer = StringBuffer()..writeAll([encodedHeader, '.', encodedPayload]);
     if (signature is String) {
       buffer.writeAll(['.', signature]);
     }
@@ -273,6 +174,10 @@ class JWT {
   bool verify(JWTSigner signer) {
     if (signature == null) {
       return false;
+    }
+
+    if (keyId != signer.kid) {
+      return false; // key ids don't match
     }
 
     final body = utf8.encode('$encodedHeader.$encodedPayload');
@@ -381,55 +286,8 @@ class JWTBuilder {
     final encodedHeader = _base64Unpadded(_jsonToBase64Url.encode(_headers));
     final encodedPayload = _base64Unpadded(_jsonToBase64Url.encode(_claims));
     final body = '$encodedHeader.$encodedPayload';
-    final signature =
-        _base64Unpadded(base64Url.encode(signer.sign(utf8.encode(body))));
+    final signature = _base64Unpadded(base64Url.encode(signer.sign(utf8.encode(body))));
     return JWT._(encodedHeader, encodedPayload, signature);
-  }
-}
-
-/// Signer interface for JWT.
-abstract class JWTSigner {
-  /// The algorithm of this signer.
-  String get algorithm;
-
-  /// Optinal `kid` header to set in the signed token.
-  String? get kid;
-
-  List<int> sign(List<int> body);
-
-  bool verify(List<int> body, List<int> signature);
-}
-
-/// Signer implementing HMAC encryption using SHA256 hashing.
-class JWTHmacSha256Signer implements JWTSigner {
-  final List<int> secret;
-  @override
-  final String? kid;
-
-  JWTHmacSha256Signer(String secret, {this.kid}) : secret = utf8.encode(secret);
-
-  @override
-  String get algorithm => 'HS256';
-
-  @override
-  List<int> sign(List<int> body) {
-    final hmac = Hmac(sha256, secret);
-    return hmac.convert(body).bytes;
-  }
-
-  @override
-  bool verify(List<int> body, List<int> signature) {
-    final actual = sign(body);
-    if (actual.length == signature.length) {
-      // constant-time comparison
-      var isEqual = true;
-      for (var i = 0; i < actual.length; i++) {
-        if (actual[i] != signature[i]) isEqual = false;
-      }
-      return isEqual;
-    } else {
-      return false;
-    }
   }
 }
 
@@ -448,8 +306,7 @@ class JWTValidator {
 
   /// Creates new validator. One can supply custom value for [currentTime]
   /// parameter, if not [DateTime.now] is used by default.
-  JWTValidator({DateTime? currentTime})
-      : currentTime = currentTime ?? DateTime.now();
+  JWTValidator({DateTime? currentTime}) : currentTime = currentTime ?? DateTime.now();
 
   /// Validates provided [token] and returns a list of validation errors.
   /// Empty list indicates there were no validation errors.

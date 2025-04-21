@@ -43,8 +43,7 @@ void main() {
 
     test('it parses string token', () {
       final signer = JWTHmacSha256Signer('secret1');
-      const stringToken =
-          'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL215Y29tcGF'
+      const stringToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL215Y29tcGF'
           'ueS5jb20ifQ.R7OVbiAKtvSkE-qF0fCkZP_m2JGrHobbRayHhEsKuKU';
       final token = JWT.parse(stringToken);
 
@@ -56,8 +55,7 @@ void main() {
 
     test('it parses another token', () {
       final signer = JWTHmacSha256Signer('secret');
-      const stringToken =
-          'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL215Zm9vYmF'
+      const stringToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL215Zm9vYmF'
           'yLmNvbSIsImlhdCI6MTQ1NTIzMjI2NywiZXhwIjoxNDU1MjM0MDY3LCJuYmYiOjE0NTU'
           'yMzIyMzcsImJvZHkiOnsiYmxhaCI6ImJvb2EifX0.PXbDbE7YapU-6WvRqbdQ2OC1N2D'
           'ScadvuQUqTHXopNc';
@@ -72,14 +70,11 @@ void main() {
     });
 
     test('it throws JWTError if token is invalid', () {
-      const badToken1 =
-          'invalid.eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL21'
+      const badToken1 = 'invalid.eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL21'
           '5Y29tcGFueS5jb20ifQ.R7OVbiAKtvSkE-qF0fCkZP_m2JGrHobbRayHhEsKuKU';
       const badToken2 = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.invalid';
-      expect(
-          () => JWT.parse(badToken1), throwsA(const TypeMatcher<JWTError>()));
-      expect(
-          () => JWT.parse(badToken2), throwsA(const TypeMatcher<JWTError>()));
+      expect(() => JWT.parse(badToken1), throwsA(const TypeMatcher<JWTError>()));
+      expect(() => JWT.parse(badToken2), throwsA(const TypeMatcher<JWTError>()));
     });
 
     test('it supports all standard claims', () {
@@ -167,14 +162,12 @@ void main() {
 
     test('exp claim is validated', () {
       final token = builder.getToken();
-      var validator =
-          JWTValidator(currentTime: DateTime.now().add(Duration(seconds: 20)));
+      var validator = JWTValidator(currentTime: DateTime.now().add(Duration(seconds: 20)));
       var errors = validator.validate(token);
       expect(errors, isNotEmpty);
       expect(errors, contains('The token has expired.'));
 
-      validator =
-          JWTValidator(currentTime: DateTime.now().add(Duration(seconds: 5)));
+      validator = JWTValidator(currentTime: DateTime.now().add(Duration(seconds: 5)));
       errors = validator.validate(token);
       expect(errors, isEmpty);
     });
@@ -182,8 +175,7 @@ void main() {
     test('iat claim is validated', () {
       final token = builder.getToken();
 
-      var validator = JWTValidator(
-          currentTime: DateTime.now().subtract(Duration(seconds: 1)));
+      var validator = JWTValidator(currentTime: DateTime.now().subtract(Duration(seconds: 1)));
       var errors = validator.validate(token);
       expect(errors, isNotEmpty);
       expect(errors, contains('The token issuedAt time is in future.'));
@@ -196,12 +188,10 @@ void main() {
 
     test('nbf claim is validated', () {
       final token = builder.getToken();
-      var validator =
-          JWTValidator(currentTime: DateTime.now().add(Duration(seconds: 1)));
+      var validator = JWTValidator(currentTime: DateTime.now().add(Duration(seconds: 1)));
       var errors = validator.validate(token);
       expect(errors, isNotEmpty);
-      expect(errors,
-          contains('The token can not be accepted due to notBefore policy.'));
+      expect(errors, contains('The token can not be accepted due to notBefore policy.'));
 
       final time = DateTime.now().add(Duration(seconds: 6));
       validator = JWTValidator(currentTime: time);
@@ -254,8 +244,7 @@ void main() {
       final token = builder.getSignedToken(signer);
       final time = DateTime.now().add(Duration(seconds: 6));
       final validator = JWTValidator(currentTime: time);
-      var errors =
-          validator.validate(token, signer: JWTHmacSha256Signer('invalid'));
+      var errors = validator.validate(token, signer: JWTHmacSha256Signer('invalid'));
       expect(errors, isNotEmpty);
       expect(errors, contains('The token signature is invalid.'));
 
@@ -273,6 +262,17 @@ void main() {
       expect(() {
         headers['kid'] = 'boom';
       }, throwsUnsupportedError);
+    });
+
+    test('it verifies kid header', () {
+      final signer1 = JWTHmacSha256Signer('secret', kid: 'key1');
+      final signer2 = JWTHmacSha256Signer('secret', kid: 'key2');
+      final signer3 = JWTHmacSha256Signer('secret');
+
+      final token = builder.getSignedToken(signer1);
+      expect(token.verify(signer1), isTrue);
+      expect(token.verify(signer2), isFalse);
+      expect(token.verify(signer3), isFalse);
     });
   });
 }
