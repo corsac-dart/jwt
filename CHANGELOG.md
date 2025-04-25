@@ -1,3 +1,7 @@
+## 2.0.1
+
+* Added .fromJWK constructors to ES256 and RS256 signers.
+
 ## 2.0.0+1
 
 * Minor readme updates.

@@ -8,11 +8,11 @@ class JWTRsaSha256Signer implements JWTSigner {
   @override
   final String? kid;
 
-  JWTRsaSha256Signer._(this._jwk, this.kid);
+  JWTRsaSha256Signer.fromJWK(JsonWebKey jwk, this.kid) : _jwk = jwk;
 
   /// Creates new signer from specified PEM string
   factory JWTRsaSha256Signer({required String pem, String? kid}) {
-    return JWTRsaSha256Signer._(JsonWebKey.fromPem(pem, keyId: kid), kid);
+    return JWTRsaSha256Signer.fromJWK(JsonWebKey.fromPem(pem, keyId: kid), kid);
   }
 
   @override

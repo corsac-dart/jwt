@@ -1,5 +1,5 @@
 name: corsac_jwt
-version: 2.0.0+1
+version: 2.0.1
 description: Lightweight implementation of JSON Web Tokens (JWT).
 homepage: https://github.com/corsac-dart/jwt
 

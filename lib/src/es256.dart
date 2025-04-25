@@ -12,10 +12,10 @@ class JWTEcdsaSha256Signer implements JWTSigner {
   @override
   final String? kid;
 
-  JWTEcdsaSha256Signer._(this._jwk, this.kid);
+  JWTEcdsaSha256Signer.fromJWK(JsonWebKey jwk, this.kid) : _jwk = jwk;
 
   factory JWTEcdsaSha256Signer({required String pem, String? kid}) {
-    return JWTEcdsaSha256Signer._(JsonWebKey.fromPem(pem, keyId: kid), kid);
+    return JWTEcdsaSha256Signer.fromJWK(JsonWebKey.fromPem(pem, keyId: kid), kid);
   }
 
   @override
