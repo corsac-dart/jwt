@@ -1,3 +1,7 @@
+## 2.0.2
+
+* Allow Pointycastle 4.x in dependencies by [davidmartos96](https://github.com/davidmartos96)
+
 ## 2.0.1
 
 * Added .fromJWK constructors to ES256 and RS256 signers.
