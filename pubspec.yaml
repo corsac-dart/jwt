@@ -10,7 +10,7 @@ dependencies:
   jose: ^0.3.4
   crypto: ^3.0.0
   logging: ^1.0.0
-  pointycastle: ^3.9.1
+  pointycastle: ">=3.9.1 <5.0.0"
 
 dev_dependencies:
   coverage: ^1.0.0
